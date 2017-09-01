@@ -37,6 +37,10 @@ func connectToRedis() {
 	})
 }
 
+func updateStatistics(){
+
+}
+
 func main() {
 
 	//load godotenv, set env variables.
@@ -100,6 +104,9 @@ func main() {
 			//Create and print string from response body
 			RequestBody := buf.String()
 			fmt.Println(RequestBody)
+
+
+			updateStatistics()
 
 			// delete successfully delivered key
 			client.Del(Key)
