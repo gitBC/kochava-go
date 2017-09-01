@@ -9,23 +9,41 @@ import (
 	"encoding/json"
 	"net/http"
 	"bytes"
+	"strconv"
 )
 
-
-func main() {
+var RedisServer, RedisPort string
+var RedisDeliveryAttempts int
+var client *redis.Client
+/**
+Load Environment variables
+ */
+func bootstrap() {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	RedisServer := os.Getenv("REDIS_SERVER")
-	RedisPort := os.Getenv("REDIS_PORT")
+	RedisServer = os.Getenv("REDIS_SERVER")
+	RedisPort = os.Getenv("REDIS_PORT")
+	RedisDeliveryAttempts, err = strconv.Atoi(os.Getenv("REDIS_DELIVERY_ATTEMPTS"))
+}
 
-	client := redis.NewClient(&redis.Options{
+func connectToRedis() {
+	client = redis.NewClient(&redis.Options{
 		Addr:     RedisServer + ":" + RedisPort,
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
+}
+
+func main() {
+
+	//load godotenv, set env variables.
+	bootstrap()
+
+	//Connect to redis, set the client interface to and instance of redis.Client
+	connectToRedis()
 
 	/*
 	Get a random value from a key on the stack
@@ -43,28 +61,58 @@ func main() {
 		panic(err)
 	}
 
-	QueueMethod := dat["method"]
-	QueueLocation := dat["location"]
+
+	//Set a few variables we will use when delivering the Redis item
+	QueueMethod := dat["method"].(string)
+	QueueLocation := dat["location"].(string)
+
+	//Teporary override of domain
+	//QueueLocation = "http://koc.app"
+
 
 
 
 	//Create http client to work on Redis Items
 	HttpClient := &http.Client{}
 
-	req, _ := http.NewRequest(QueueMethod.(string), QueueLocation.(string), nil)
-	req.Header.Add("Accept", "application/json")
-	resp, err := HttpClient.Do(req)
 
-	defer resp.Body.Close()
+	for i := 0 ; i <= RedisDeliveryAttempts; i++ {
+
+		req, _ := http.NewRequest(QueueMethod, QueueLocation,nil)
+		req.Header.Add("Accept", "application/json")
+		resp, err := HttpClient.Do(req)
 
 
-	//Create a buffer to read the response body
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(resp.Body)
+		//Check for request error
+		if nil == err {
 
-	//Create and print string from response body
-	RequestBody := buf.String()
-	fmt.Println(RequestBody)
+			fmt.Println(resp)
 
+			//HttpClient.Do automatically uses the provided transport to close the body on non-nil response
+			//defer resp.Body.Close()
+
+
+			//Create a buffer to read the response body
+			buf := new(bytes.Buffer)
+			buf.ReadFrom(resp.Body)
+
+			//Create and print string from response body
+			RequestBody := buf.String()
+			fmt.Println(RequestBody)
+
+			// delete successfully delivered key
+			//client.Del(Key)
+
+			//we delivered, bone out
+			break
+
+		} else {
+
+			fmt.Println("try again")
+			//we didnt deliver and need to up the delivery counter
+			i++
+		}
+
+	}
 
 }
