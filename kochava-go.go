@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"github.com/go-redis/redis"
+	"reflect"
+	"encoding/json"
 )
 
 
@@ -27,5 +29,19 @@ func main() {
 	/*
 	Get a random value from a key on the stack
 	 */
-	fmt.Println(client.Get(client.RandomKey().Val()).Val()	)
+	Key := client.RandomKey().Val()
+
+	Va := client.Get(Key).Val()
+
+	fmt.Println(reflect.TypeOf(Va))
+
+	byt := []byte(Va)
+	//We need to provide a variable where the JSON package can put the decoded data. This map[string]interface{} will hold a map of strings to arbitrary data types.
+	var dat map[string]interface{}
+	if err := json.Unmarshal(byt, &dat); err != nil {
+		panic(err)
+	}
+	fmt.Println(dat)
+
+	//fmt.Println(Value)
 }
