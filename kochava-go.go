@@ -18,14 +18,14 @@ func main() {
 	RedisServer := os.Getenv("REDIS_SERVER")
 	RedisPort := os.Getenv("REDIS_PORT")
 
-	fmt.Println(RedisServer)
 	client := redis.NewClient(&redis.Options{
 		Addr:     RedisServer + ":" + RedisPort,
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
 
-	pong, err := client.Ping().Result()
-	fmt.Println(pong, err)
-
+	/*
+	Get a random value from a key on the stack
+	 */
+	fmt.Println(client.Get(client.RandomKey().Val()).Val()	)
 }
