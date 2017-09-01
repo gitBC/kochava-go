@@ -15,31 +15,6 @@ import (
 var RedisServer, RedisPort string
 var RedisDeliveryAttempts int
 var client *redis.Client
-/**
-Load Environment variables
- */
-func bootstrap() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
-	RedisServer = os.Getenv("REDIS_SERVER")
-	RedisPort = os.Getenv("REDIS_PORT")
-	RedisDeliveryAttempts, err = strconv.Atoi(os.Getenv("REDIS_DELIVERY_ATTEMPTS"))
-}
-
-func connectToRedis() {
-	client = redis.NewClient(&redis.Options{
-		Addr:     RedisServer + ":" + RedisPort,
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-}
-
-func updateStatistics(){
-
-}
 
 func main() {
 
@@ -121,5 +96,32 @@ func main() {
 		}
 
 	}
+
+}
+
+
+/**
+Load Environment variables
+ */
+func bootstrap() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	RedisServer = os.Getenv("REDIS_SERVER")
+	RedisPort = os.Getenv("REDIS_PORT")
+	RedisDeliveryAttempts, err = strconv.Atoi(os.Getenv("REDIS_DELIVERY_ATTEMPTS"))
+}
+
+func connectToRedis() {
+	client = redis.NewClient(&redis.Options{
+		Addr:     RedisServer + ":" + RedisPort,
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+}
+
+func updateStatistics(){
 
 }
