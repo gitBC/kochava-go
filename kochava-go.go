@@ -77,7 +77,7 @@ func main() {
 	HttpClient := &http.Client{}
 
 
-	for i := 0 ; i <= RedisDeliveryAttempts; i++ {
+	for i := 0 ; i < RedisDeliveryAttempts; i++ {
 
 		req, _ := http.NewRequest(QueueMethod, QueueLocation,nil)
 		req.Header.Add("Accept", "application/json")
