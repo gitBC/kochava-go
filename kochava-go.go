@@ -10,11 +10,19 @@ import (
 	"net/http"
 	"bytes"
 	"strconv"
+	"time"
 )
 
 var RedisServer, RedisPort string
 var RedisDeliveryAttempts int
 var client *redis.Client
+
+
+type Statistics struct {
+	delivery_attempts, response_code int
+	response_time int64
+	response_body, original_redis_key string
+}
 
 func main() {
 
@@ -47,14 +55,19 @@ func main() {
 	QueueLocation := dat["location"].(string)
 
 	//Teporary override of domain
-	QueueLocation = "http://koc.app"
+//	QueueLocation = "http://koc.app"
 
 
-
+	statistics := Statistics{0, 0,0,"",Key}
 
 	//Create http client to work on Redis Items
 	HttpClient := &http.Client{}
 
+	//Store the current nano time so that we can count total response time.
+	deliveryTime := time.Now().UnixNano();
+
+
+	fmt.Println(deliveryTime);
 
 	for i := 0 ; i < RedisDeliveryAttempts; i++ {
 
@@ -80,6 +93,12 @@ func main() {
 			RequestBody := buf.String()
 			fmt.Println(RequestBody)
 
+			fmt.Println(resp.StatusCode)
+
+			statistics.delivery_attempts++
+			statistics.response_body = RequestBody
+			statistics.response_code = resp.StatusCode
+			statistics.response_time = time.Now().UnixNano() - deliveryTime
 
 			updateStatistics()
 
@@ -91,6 +110,14 @@ func main() {
 
 		} else {
 
+			statistics.delivery_attempts++
+			fmt.Println(err)
+
+			if i == RedisDeliveryAttempts - 1 {
+
+				statistics.response_time = time.Now().UnixNano() - deliveryTime
+				updateStatistics()
+			}
 			fmt.Println("try again")
 
 		}
