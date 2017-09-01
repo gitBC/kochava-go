@@ -114,6 +114,9 @@ func bootstrap() {
 	RedisDeliveryAttempts, err = strconv.Atoi(os.Getenv("REDIS_DELIVERY_ATTEMPTS"))
 }
 
+/**
+Creates a redis client for the function
+ */
 func connectToRedis() {
 	client = redis.NewClient(&redis.Options{
 		Addr:     RedisServer + ":" + RedisPort,
@@ -122,6 +125,10 @@ func connectToRedis() {
 	})
 }
 
+
+/**
+	Sends updated statistics to PHP endpoint to track success / failure of delivery:wq
+ */
 func updateStatistics(){
 
 }
