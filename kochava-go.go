@@ -54,7 +54,8 @@ func main() {
 	byt := []byte(Va)
 
 	/*
-	We need to provide a variable where the JSON package can put the decoded data. This map[string]interface{} will hold a map of strings to arbitrary data types.
+	 * We need to provide a variable where the JSON package can put the decoded data. This map[string]interface{} will
+	 * hold a map of strings to arbitrary data types.
 	 */
 	var dat map[string]interface{}
 	if err := json.Unmarshal(byt, &dat); err != nil {
@@ -67,7 +68,7 @@ func main() {
 	QueueLocation := dat["location"].(string)
 
 	//Teporary override of domain
-	//QueueLocation = "http://koc.app"
+	QueueLocation = "http://koc.app"
 
 
 
@@ -101,7 +102,7 @@ func main() {
 			fmt.Println(RequestBody)
 
 			// delete successfully delivered key
-			//client.Del(Key)
+			client.Del(Key)
 
 			//we delivered, bone out
 			break
@@ -109,8 +110,7 @@ func main() {
 		} else {
 
 			fmt.Println("try again")
-			//we didnt deliver and need to up the delivery counter
-			i++
+
 		}
 
 	}
