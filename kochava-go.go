@@ -55,7 +55,7 @@ func main() {
 	QueueLocation := dat["location"].(string)
 
 	//Teporary override of domain
-//	QueueLocation = "http://koc.app"
+	QueueLocation = "http://koc.app"
 
 
 	statistics := Statistics{0, 0,0,"",Key}
@@ -100,7 +100,7 @@ func main() {
 			statistics.response_code = resp.StatusCode
 			statistics.response_time = time.Now().UnixNano() - deliveryTime
 
-			updateStatistics()
+			updateStatistics(statistics)
 
 			// delete successfully delivered key
 			client.Del(Key)
@@ -116,7 +116,7 @@ func main() {
 			if i == RedisDeliveryAttempts - 1 {
 
 				statistics.response_time = time.Now().UnixNano() - deliveryTime
-				updateStatistics()
+				updateStatistics(statistics)
 			}
 			fmt.Println("try again")
 
@@ -156,6 +156,22 @@ func connectToRedis() {
 /**
 	Sends updated statistics to PHP endpoint to track success / failure of delivery:wq
  */
-func updateStatistics(){
+func updateStatistics(statistics Statistics){
 
+	fmt.Println(statistics)
+
+
+	//Should be able to serialize these, getting empty object back
+	sendem, err := json.Marshal( statistics)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("Returned JSON" + string(sendem))
+
+
+	/*postData := "{\"delivery_attempts\":\"" + print(statistics.delivery_attempts) + ",\"response_code\":\"" + statistics.response_code.(string) + "\"}"
+
+	fmt.Println(postData)
+	fmt.Println(statistics.response_code)*/
 }
