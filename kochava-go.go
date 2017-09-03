@@ -115,11 +115,11 @@ func main() {
 			statistics.delivery_attempts++
 			fmt.Println(err)
 
-			if i == RedisDeliveryAttempts - 1 {
+			if statistics.delivery_attempts == RedisDeliveryAttempts {
 
 
 				//stupid magic number to get microseconds to store in php
-				statistics.response_time = time.Now().UnixNano() - deliveryTime / 1000
+				statistics.response_time = (time.Now().UnixNano() - deliveryTime) / 1000
 				updateStatistics(statistics)
 			}
 			fmt.Println("try again")
