@@ -17,12 +17,15 @@ var RedisServer, RedisPort string
 var RedisDeliveryAttempts int
 var client *redis.Client
 
-
 type Statistics struct {
 	delivery_attempts, response_code int
 	response_time int64
 	response_body, original_redis_key string
 }
+
+
+//Create http client to work on Redis Items
+var HttpClient = &http.Client{}
 
 func main() {
 
@@ -55,13 +58,10 @@ func main() {
 	QueueLocation := dat["location"].(string)
 
 	//Teporary override of domain
-	QueueLocation = "http://koc.app"
+//	QueueLocation = "http://koc.app"
 
 
 	statistics := Statistics{0, 0,0,"",Key}
-
-	//Create http client to work on Redis Items
-	HttpClient := &http.Client{}
 
 	//Store the current nano time so that we can count total response time.
 	deliveryTime := time.Now().UnixNano();
@@ -98,7 +98,9 @@ func main() {
 			statistics.delivery_attempts++
 			statistics.response_body = RequestBody
 			statistics.response_code = resp.StatusCode
-			statistics.response_time = time.Now().UnixNano() - deliveryTime
+
+			//stupid magic number to get microseconds to store in php
+			statistics.response_time = (time.Now().UnixNano() - deliveryTime) / 1000
 
 			updateStatistics(statistics)
 
@@ -115,7 +117,9 @@ func main() {
 
 			if i == RedisDeliveryAttempts - 1 {
 
-				statistics.response_time = time.Now().UnixNano() - deliveryTime
+
+				//stupid magic number to get microseconds to store in php
+				statistics.response_time = time.Now().UnixNano() - deliveryTime / 1000
 				updateStatistics(statistics)
 			}
 			fmt.Println("try again")
@@ -162,16 +166,28 @@ func updateStatistics(statistics Statistics){
 
 
 	//Should be able to serialize these, getting empty object back
-	sendem, err := json.Marshal( statistics)
-	if err != nil {
-		fmt.Println(err)
-		return
+	//sendem, err := json.Marshal( statistics)
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return
+	//}
+	//fmt.Println("Returned JSON" + string(sendem))
+
+	var postData  =  []byte( "{" +
+		"\"original_redis_key\":\"" + statistics.original_redis_key + "\"," +
+		"\"delivery_attempts\":\"" + strconv.Itoa(statistics.delivery_attempts) + "\"," +
+		"\"response_code\":\"" + strconv.Itoa(statistics.response_code) + "\"," +
+	//Losing percision here; times ideally wouldnt be this high anyways
+		"\"response_time\":\"" + strconv.FormatInt(statistics.response_time, 10) + "\"," +
+		"\"response_body\":\"" + statistics.response_body + "\"" +
+		"}" )
+
+	response,posterr := HttpClient.Post(os.Getenv("DETAILS_API_LOCATION"), "application/json", bytes.NewBuffer(postData))
+
+	if posterr != nil {
+		fmt.Println(response)
 	}
-	fmt.Println("Returned JSON" + string(sendem))
-
-
-	/*postData := "{\"delivery_attempts\":\"" + print(statistics.delivery_attempts) + ",\"response_code\":\"" + statistics.response_code.(string) + "\"}"
 
 	fmt.Println(postData)
-	fmt.Println(statistics.response_code)*/
+	fmt.Println(statistics.response_code)
 }
