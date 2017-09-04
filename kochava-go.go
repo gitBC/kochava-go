@@ -17,12 +17,21 @@ var RedisServer, RedisPort string
 var RedisDeliveryAttempts int
 var client *redis.Client
 
+
+/**
+	For JSON.Marshall to actually work on a struct, not only must you use the json tagging, but also "export"
+	the variables for usage by naming them with a capital letter?
+ */
 type Statistics struct {
-	delivery_attempts, response_code int
-	response_time int64
-	response_body, original_redis_key string
+
+	Delivery_attempts int `json:"delivery_attempts"`
+	Response_code int `json:"response_code"`
+	Response_time int64 `json:"response_time"`
+	Response_body string `json:"response_body"`
+	Original_redis_key string `json:"original_redis_key"`
 }
 
+var statistics Statistics
 
 //Create http client to work on Redis Items
 var HttpClient = &http.Client{}
@@ -61,7 +70,8 @@ func main() {
 //	QueueLocation = "http://koc.app"
 
 
-	statistics := Statistics{0, 0,0,"",Key}
+	//statistics = Statistics{0, 0,0,"",Key}
+	statistics = Statistics{Original_redis_key:Key}
 
 	//Store the current nano time so that we can count total response time.
 	deliveryTime := time.Now().UnixNano();
@@ -95,14 +105,14 @@ func main() {
 
 			fmt.Println(resp.StatusCode)
 
-			statistics.delivery_attempts++
-			statistics.response_body = RequestBody
-			statistics.response_code = resp.StatusCode
+			statistics.Delivery_attempts++
+			statistics.Response_body = RequestBody
+			statistics.Response_code = resp.StatusCode
 
 			//stupid magic number to get microseconds to store in php
-			statistics.response_time = (time.Now().UnixNano() - deliveryTime) / 1000
+			statistics.Response_time = (time.Now().UnixNano() - deliveryTime) / 1000
 
-			updateStatistics(statistics)
+			updateStatistics()
 
 			// delete successfully delivered key
 			client.Del(Key)
@@ -112,17 +122,21 @@ func main() {
 
 		} else {
 
-			statistics.delivery_attempts++
+			statistics.Delivery_attempts++
 			fmt.Println(err)
 
-			if statistics.delivery_attempts == RedisDeliveryAttempts {
-
+			if statistics.Delivery_attempts == RedisDeliveryAttempts {
 
 				//stupid magic number to get microseconds to store in php
-				statistics.response_time = (time.Now().UnixNano() - deliveryTime) / 1000
-				updateStatistics(statistics)
+				statistics.Response_time = (time.Now().UnixNano() - deliveryTime) / 1000
+				updateStatistics()
+				client.Del(Key)
+
+			} else {
+
+				fmt.Println("try again")
+
 			}
-			fmt.Println("try again")
 
 		}
 
@@ -160,34 +174,19 @@ func connectToRedis() {
 /**
 	Sends updated statistics to PHP endpoint to track success / failure of delivery:wq
  */
-func updateStatistics(statistics Statistics){
-
-	fmt.Println(statistics)
-
+func updateStatistics(){
 
 	//Should be able to serialize these, getting empty object back
-	//sendem, err := json.Marshal( statistics)
-	//if err != nil {
-	//	fmt.Println(err)
-	//	return
-	//}
-	//fmt.Println("Returned JSON" + string(sendem))
+	sendem, err := json.Marshal( statistics)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-	var postData  =  []byte( "{" +
-		"\"original_redis_key\":\"" + statistics.original_redis_key + "\"," +
-		"\"delivery_attempts\":\"" + strconv.Itoa(statistics.delivery_attempts) + "\"," +
-		"\"response_code\":\"" + strconv.Itoa(statistics.response_code) + "\"," +
-	//Losing percision here; times ideally wouldnt be this high anyways
-		"\"response_time\":\"" + strconv.FormatInt(statistics.response_time, 10) + "\"," +
-		"\"response_body\":\"" + statistics.response_body + "\"" +
-		"}" )
-
-	response,posterr := HttpClient.Post(os.Getenv("DETAILS_API_LOCATION"), "application/json", bytes.NewBuffer(postData))
+	response,posterr := HttpClient.Post(os.Getenv("DETAILS_API_LOCATION"), "application/json", bytes.NewReader(sendem) )
 
 	if posterr != nil {
 		fmt.Println(response)
 	}
 
-	fmt.Println(postData)
-	fmt.Println(statistics.response_code)
 }
