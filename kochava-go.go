@@ -52,6 +52,10 @@ func main() {
 
 	byt := []byte(Va)
 
+	if len(byt) == 0 {
+		os.Exit(0)
+	}
+
 	/*
 	 * We need to provide a variable where the JSON package can put the decoded data. This map[string]interface{} will
 	 * hold a map of strings to arbitrary data types.
@@ -61,13 +65,12 @@ func main() {
 		panic(err)
 	}
 
-
 	//Set a few variables we will use when delivering the Redis item
 	QueueMethod := dat["method"].(string)
 	QueueLocation := dat["location"].(string)
 
 	//Teporary override of domain
-//	QueueLocation = "http://koc.app"
+	QueueLocation = "http://koc.app/"
 
 
 	//statistics = Statistics{0, 0,0,"",Key}
@@ -175,6 +178,7 @@ func connectToRedis() {
 	Sends updated statistics to PHP endpoint to track success / failure of delivery:wq
  */
 func updateStatistics(){
+	fmt.Println(statistics)
 
 	//Should be able to serialize these, getting empty object back
 	sendem, err := json.Marshal( statistics)
