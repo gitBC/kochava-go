@@ -11,6 +11,7 @@ import (
 	"bytes"
 	"strconv"
 	"time"
+	"math"
 )
 
 var RedisServer, RedisPort string
@@ -28,6 +29,7 @@ type Statistics struct {
 	Response_code int `json:"response_code"`
 	Response_time int64 `json:"response_time"`
 	Response_body string `json:"response_body"`
+	Delivery_time string `json:"delivery_time"`
 	Original_redis_key string `json:"original_redis_key"`
 }
 
@@ -109,6 +111,20 @@ func main() {
 			fmt.Println(RequestBody)
 
 			fmt.Println(resp.StatusCode)
+
+			//Get redis key, convert to a float, then make a new time object which we can subtract from current time
+			//TODO: ensure times are set the same on ingestion and delivery servers
+			original_request_time, err := strconv.ParseFloat(Key,64)
+			if err != nil {}
+			fmt.Println("key: " + Key)
+			fmt.Print("original_request_time: ")
+			fmt.Println(strconv.FormatFloat(original_request_time, 'f', -1, 64))
+			sec, dec := math.Modf(original_request_time);
+			original_request_time_time := time.Unix(int64(sec), int64(dec*(1e9)))
+
+			//Subtract initial request time from now to get the total amount of time it took for us to deliver
+			totalDeliveryTime := time.Now().Sub(original_request_time_time).String()
+			statistics.Delivery_time = totalDeliveryTime
 
 			statistics.Delivery_attempts++
 			statistics.Response_body = RequestBody
