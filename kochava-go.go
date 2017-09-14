@@ -38,6 +38,7 @@ var HttpClient = &http.Client{}
 
 func main() {
 
+
 	//load godotenv, set env variables.
 	bootstrap()
 
@@ -52,7 +53,8 @@ func main() {
 
 	byt := []byte(Va)
 
-	if len(byt) == 0 {
+	//exit application if there is no length
+	if len(byt) <= 0 {
 		os.Exit(0)
 	}
 
@@ -77,10 +79,10 @@ func main() {
 	statistics = Statistics{Original_redis_key:Key}
 
 	//Store the current nano time so that we can count total response time.
-	deliveryTime := time.Now().UnixNano();
+	responseTime := time.Now().UnixNano();
 
 
-	fmt.Println(deliveryTime);
+	fmt.Println(responseTime);
 
 	for i := 0 ; i < RedisDeliveryAttempts; i++ {
 
@@ -113,7 +115,7 @@ func main() {
 			statistics.Response_code = resp.StatusCode
 
 			//stupid magic number to get microseconds to store in php
-			statistics.Response_time = (time.Now().UnixNano() - deliveryTime) / 1000
+			statistics.Response_time = (time.Now().UnixNano() - responseTime) / 1000
 
 			updateStatistics()
 
@@ -131,7 +133,7 @@ func main() {
 			if statistics.Delivery_attempts == RedisDeliveryAttempts {
 
 				//stupid magic number to get microseconds to store in php
-				statistics.Response_time = (time.Now().UnixNano() - deliveryTime) / 1000
+				statistics.Response_time = (time.Now().UnixNano() - responseTime) / 1000
 				updateStatistics()
 				client.Del(Key)
 
