@@ -50,10 +50,9 @@ func main() {
 	/*
 	Get a random value from a key on the stack
 	 */
-	Key := client.RandomKey().Val()
-	Va := client.Get(Key).Val()
+	requestJSON := client.LPop("queue:requests").Val()
 
-	byt := []byte(Va)
+	byt := []byte(requestJSON)
 
 	//exit application if there is no length
 	if len(byt) <= 0 {
@@ -72,13 +71,12 @@ func main() {
 	//Set a few variables we will use when delivering the Redis item
 	QueueMethod := dat["method"].(string)
 	QueueLocation := dat["location"].(string)
+	QueueTime := dat["original_request_time"].(string)
 
 	//Teporary override of domain
 	QueueLocation = "http://koc.app/"
 
-
-	//statistics = Statistics{0, 0,0,"",Key}
-	statistics = Statistics{Original_redis_key:Key}
+	statistics = Statistics{Original_redis_key:QueueTime}
 
 	//Store the current nano time so that we can count total response time.
 	responseTime := time.Now().UnixNano();
@@ -114,17 +112,15 @@ func main() {
 
 			//Get redis key, convert to a float, then make a new time object which we can subtract from current time
 			//TODO: ensure times are set the same on ingestion and delivery servers
-			original_request_time, err := strconv.ParseFloat(Key,64)
+			original_request_time, err := strconv.ParseFloat(QueueTime,64)
 			if err != nil {}
-			fmt.Println("key: " + Key)
-			fmt.Print("original_request_time: ")
-			fmt.Println(strconv.FormatFloat(original_request_time, 'f', -1, 64))
+
 			sec, dec := math.Modf(original_request_time);
 			original_request_time_time := time.Unix(int64(sec), int64(dec*(1e9)))
 
 			//Subtract initial request time from now to get the total amount of time it took for us to deliver
-			totalDeliveryTime := time.Now().Sub(original_request_time_time).String()
-			statistics.Delivery_time = totalDeliveryTime
+			totalDeliveryTime := time.Now().Sub(original_request_time_time).Seconds()
+			statistics.Delivery_time = strconv.FormatFloat(totalDeliveryTime, 'f', 6, 64)
 
 			statistics.Delivery_attempts++
 			statistics.Response_body = RequestBody
@@ -134,9 +130,6 @@ func main() {
 			statistics.Response_time = (time.Now().UnixNano() - responseTime) / 1000
 
 			updateStatistics()
-
-			// delete successfully delivered key
-			client.Del(Key)
 
 			//we delivered, bone out
 			break
@@ -151,7 +144,6 @@ func main() {
 				//stupid magic number to get microseconds to store in php
 				statistics.Response_time = (time.Now().UnixNano() - responseTime) / 1000
 				updateStatistics()
-				client.Del(Key)
 
 			} else {
 
