@@ -18,18 +18,16 @@ var RedisServer, RedisPort string
 var RedisDeliveryAttempts int
 var client *redis.Client
 
-
 /**
 	For JSON.Marshall to actually work on a struct, not only must you use the json tagging, but also "export"
 	the variables for usage by naming them with a capital letter?
  */
 type Statistics struct {
-
-	Delivery_attempts int `json:"delivery_attempts"`
-	Response_code int `json:"response_code"`
-	Response_time string `json:"response_time"`
-	Response_body string `json:"response_body"`
-	Delivery_time string `json:"delivery_time"`
+	Delivery_attempts  int `json:"delivery_attempts"`
+	Response_code      int `json:"response_code"`
+	Response_time      string `json:"response_time"`
+	Response_body      string `json:"response_body"`
+	Delivery_time      string `json:"delivery_time"`
 	Original_redis_key string `json:"original_redis_key"`
 }
 
@@ -39,7 +37,6 @@ var statistics Statistics
 var HttpClient = &http.Client{}
 
 func main() {
-
 
 	//load godotenv, set env variables.
 	bootstrap()
@@ -76,17 +73,16 @@ func main() {
 	//Teporary override of domain
 	QueueLocation = "http://koc.app/"
 
-	statistics = Statistics{Original_redis_key:QueueTime}
+	statistics = Statistics{Original_redis_key: QueueTime}
 
 	//Store the current time so that we can count total response time.
 	responseTime := time.Now()
 
-	for i := 0 ; i < RedisDeliveryAttempts; i++ {
+	for i := 0; i < RedisDeliveryAttempts; i++ {
 
-		req, _ := http.NewRequest(QueueMethod, QueueLocation,nil)
+		req, _ := http.NewRequest(QueueMethod, QueueLocation, nil)
 		req.Header.Add("Accept", "application/json")
 		resp, err := HttpClient.Do(req)
-
 
 		//Check for request error
 		if nil == err {
@@ -95,7 +91,6 @@ func main() {
 
 			//HttpClient.Do automatically uses the provided transport to close the body on non-nil response
 			//defer resp.Body.Close()
-
 
 			//Create a buffer to read the response body
 			buf := new(bytes.Buffer)
@@ -109,8 +104,9 @@ func main() {
 
 			//Get redis key, convert to a float, then make a new time object which we can subtract from current time
 			//TODO: ensure times are set the same on ingestion and delivery servers
-			original_request_time, err := strconv.ParseFloat(QueueTime,64)
-			if err != nil {}
+			original_request_time, err := strconv.ParseFloat(QueueTime, 64)
+			if err != nil {
+			}
 
 			sec, dec := math.Modf(original_request_time);
 			original_request_time_time := time.Unix(int64(sec), int64(dec*(1e9)))
@@ -124,7 +120,7 @@ func main() {
 			statistics.Response_code = resp.StatusCode
 
 			//subtract one time object from another, ouput difference in seconds, format to string, 6 digits
-			statistics.Response_time = strconv.FormatFloat(time.Now().Sub(responseTime).Seconds(), 'f',6,64)
+			statistics.Response_time = strconv.FormatFloat(time.Now().Sub(responseTime).Seconds(), 'f', 6, 64)
 
 			updateStatistics()
 
@@ -154,7 +150,6 @@ func main() {
 
 }
 
-
 /**
 Load Environment variables
  */
@@ -180,21 +175,20 @@ func connectToRedis() {
 	})
 }
 
-
 /**
 	Sends updated statistics to PHP endpoint to track success / failure of delivery:wq
  */
-func updateStatistics(){
+func updateStatistics() {
 	fmt.Println(statistics)
 
 	//Should be able to serialize these, getting empty object back
-	sendem, err := json.Marshal( statistics)
+	sendem, err := json.Marshal(statistics)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	response,posterr := HttpClient.Post(os.Getenv("DETAILS_API_LOCATION"), "application/json", bytes.NewReader(sendem) )
+	response, posterr := HttpClient.Post(os.Getenv("DETAILS_API_LOCATION"), "application/json", bytes.NewReader(sendem))
 
 	if posterr != nil {
 		fmt.Println(response)
