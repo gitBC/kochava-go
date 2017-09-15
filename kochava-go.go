@@ -23,12 +23,12 @@ var client *redis.Client
 	the variables for usage by naming them with a capital letter?
  */
 type Statistics struct {
-	Delivery_attempts  int `json:"delivery_attempts"`
-	Response_code      int `json:"response_code"`
-	Response_time      string `json:"response_time"`
-	Response_body      string `json:"response_body"`
-	Delivery_time      string `json:"delivery_time"`
-	Original_redis_key string `json:"original_redis_key"`
+	Delivery_attempts   int `json:"delivery_attempts"`
+	Response_code       int `json:"response_code"`
+	Response_time_delta string `json:"response_time"`
+	Response_body       string `json:"response_body"`
+	Delivery_time_delta string `json:"delivery_time"`
+	Original_redis_key  string `json:"original_redis_key"`
 }
 
 var statistics Statistics
@@ -113,14 +113,14 @@ func main() {
 
 			//Subtract initial request time from now to get the total amount of time it took for us to deliver
 			totalDeliveryTime := time.Now().Sub(original_request_time_time).Seconds()
-			statistics.Delivery_time = strconv.FormatFloat(totalDeliveryTime, 'f', 6, 64)
+			statistics.Delivery_time_delta = strconv.FormatFloat(totalDeliveryTime, 'f', 6, 64)
 
 			statistics.Delivery_attempts++
 			statistics.Response_body = RequestBody
 			statistics.Response_code = resp.StatusCode
 
 			//subtract one time object from another, ouput difference in seconds, format to string, 6 digits
-			statistics.Response_time = strconv.FormatFloat(time.Now().Sub(responseTime).Seconds(), 'f', 6, 64)
+			statistics.Response_time_delta = strconv.FormatFloat(time.Now().Sub(responseTime).Seconds(), 'f', 6, 64)
 
 			updateStatistics()
 
@@ -135,7 +135,7 @@ func main() {
 			if statistics.Delivery_attempts == RedisDeliveryAttempts {
 
 				//stupid magic number to get microseconds to store in php
-				statistics.Response_time = strconv.FormatFloat(time.Now().Sub(responseTime).Seconds(), 'f', 6, 64)
+				statistics.Response_time_delta = strconv.FormatFloat(time.Now().Sub(responseTime).Seconds(), 'f', 6, 64)
 				updateStatistics()
 
 			} else {
