@@ -27,7 +27,7 @@ type Statistics struct {
 
 	Delivery_attempts int `json:"delivery_attempts"`
 	Response_code int `json:"response_code"`
-	Response_time int64 `json:"response_time"`
+	Response_time string `json:"response_time"`
 	Response_body string `json:"response_body"`
 	Delivery_time string `json:"delivery_time"`
 	Original_redis_key string `json:"original_redis_key"`
@@ -78,11 +78,8 @@ func main() {
 
 	statistics = Statistics{Original_redis_key:QueueTime}
 
-	//Store the current nano time so that we can count total response time.
-	responseTime := time.Now().UnixNano();
-
-
-	fmt.Println(responseTime);
+	//Store the current time so that we can count total response time.
+	responseTime := time.Now()
 
 	for i := 0 ; i < RedisDeliveryAttempts; i++ {
 
@@ -126,8 +123,8 @@ func main() {
 			statistics.Response_body = RequestBody
 			statistics.Response_code = resp.StatusCode
 
-			//stupid magic number to get microseconds to store in php
-			statistics.Response_time = (time.Now().UnixNano() - responseTime) / 1000
+			//subtract one time object from another, ouput difference in seconds, format to string, 6 digits
+			statistics.Response_time = strconv.FormatFloat(time.Now().Sub(responseTime).Seconds(), 'f',6,64)
 
 			updateStatistics()
 
@@ -142,7 +139,7 @@ func main() {
 			if statistics.Delivery_attempts == RedisDeliveryAttempts {
 
 				//stupid magic number to get microseconds to store in php
-				statistics.Response_time = (time.Now().UnixNano() - responseTime) / 1000
+				statistics.Response_time = strconv.FormatFloat(time.Now().Sub(responseTime).Seconds(), 'f', 6, 64)
 				updateStatistics()
 
 			} else {
