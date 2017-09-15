@@ -25,9 +25,9 @@ var client *redis.Client
 type Statistics struct {
 	Delivery_attempts   int `json:"delivery_attempts"`
 	Response_code       int `json:"response_code"`
-	Response_time_delta string `json:"response_time"`
 	Response_body       string `json:"response_body"`
-	Delivery_time_delta string `json:"delivery_time"`
+	Response_time_delta string `json:"response_time_delta"` //we're sending more data than needed calc on logging server
+	Delivery_time_delta string `json:"delivery_time_delta"`
 	Original_redis_key  string `json:"original_redis_key"`
 }
 
