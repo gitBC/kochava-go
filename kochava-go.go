@@ -28,6 +28,8 @@ type Statistics struct {
 	Response_body       string `json:"response_body"`
 	Response_time_delta string `json:"response_time_delta"` //we're sending more data than needed calc on logging server
 	Delivery_time_delta string `json:"delivery_time_delta"`
+	Response_datetime string `json:"response_datetime"` //we're sending more data than needed calc on logging server
+	Delivery_datetime string `json:"delivery_datetime"`
 	Original_redis_key  string `json:"original_redis_key"`
 }
 
@@ -76,7 +78,7 @@ func main() {
 	statistics = Statistics{Original_redis_key: QueueTime}
 
 	//Store the current time so that we can count total response time.
-	responseTime := time.Now()
+	DeliveryStartTime := time.Now()
 
 	for i := 0; i < RedisDeliveryAttempts; i++ {
 
@@ -98,9 +100,8 @@ func main() {
 
 			//Create and print string from response body
 			RequestBody := buf.String()
-			fmt.Println(RequestBody)
 
-			fmt.Println(resp.StatusCode)
+			ResponseReceivedTime := time.Now()
 
 			//Get redis key, convert to a float, then make a new time object which we can subtract from current time
 			//TODO: ensure times are set the same on ingestion and delivery servers
@@ -112,15 +113,16 @@ func main() {
 			original_request_time_time := time.Unix(int64(sec), int64(dec*(1e9)))
 
 			//Subtract initial request time from now to get the total amount of time it took for us to deliver
-			totalDeliveryTime := time.Now().Sub(original_request_time_time).Seconds()
-			statistics.Delivery_time_delta = strconv.FormatFloat(totalDeliveryTime, 'f', 6, 64)
+			statistics.Delivery_time_delta = durationToMicroString(ResponseReceivedTime.Sub(original_request_time_time))
+			statistics.Delivery_datetime = timeToMicroString(DeliveryStartTime)
+
+			//subtract one time object from another, ouput difference in seconds, format to string, 6 digits
+			statistics.Response_time_delta = durationToMicroString(ResponseReceivedTime.Sub(DeliveryStartTime))
+			statistics.Response_datetime = timeToMicroString(ResponseReceivedTime)
 
 			statistics.Delivery_attempts++
 			statistics.Response_body = RequestBody
 			statistics.Response_code = resp.StatusCode
-
-			//subtract one time object from another, ouput difference in seconds, format to string, 6 digits
-			statistics.Response_time_delta = strconv.FormatFloat(time.Now().Sub(responseTime).Seconds(), 'f', 6, 64)
 
 			updateStatistics()
 
@@ -128,6 +130,7 @@ func main() {
 			break
 
 		} else {
+			ResponseReceivedTime := time.Now()
 
 			statistics.Delivery_attempts++
 			fmt.Println(err)
@@ -135,7 +138,10 @@ func main() {
 			if statistics.Delivery_attempts == RedisDeliveryAttempts {
 
 				//stupid magic number to get microseconds to store in php
-				statistics.Response_time_delta = strconv.FormatFloat(time.Now().Sub(responseTime).Seconds(), 'f', 6, 64)
+				statistics.Response_time_delta = durationToMicroString(ResponseReceivedTime.Sub(DeliveryStartTime))
+
+				statistics.Delivery_datetime = timeToMicroString(DeliveryStartTime)
+				statistics.Response_datetime = timeToMicroString(ResponseReceivedTime)
 				updateStatistics()
 
 			} else {
@@ -148,6 +154,14 @@ func main() {
 
 	}
 
+}
+
+
+func durationToMicroString(timeToConvert time.Duration) string {
+	return strconv.FormatFloat(timeToConvert.Seconds(), 'f', 6, 64)
+}
+func timeToMicroString(timeToConvert time.Time) string {
+	return strconv.FormatInt(timeToConvert.Unix(),10) + "." + strconv.Itoa(timeToConvert.Nanosecond())
 }
 
 /**
