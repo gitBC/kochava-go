@@ -14,7 +14,8 @@ import (
 	"math"
 )
 
-var RedisServer, RedisPort string
+var RedisServer, RedisPort, RedisPassword string
+var RedisDB int
 var RedisDeliveryAttempts int
 var client *redis.Client
 
@@ -73,7 +74,7 @@ func main() {
 	QueueTime := dat["original_request_time"].(string)
 
 	//Teporary override of domain
-	QueueLocation = "http://koc.app/"
+	//QueueLocation = "http://koc.app/"
 
 	statistics = Statistics{Original_redis_key: QueueTime}
 
@@ -175,6 +176,8 @@ func bootstrap() {
 
 	RedisServer = os.Getenv("REDIS_SERVER")
 	RedisPort = os.Getenv("REDIS_PORT")
+	RedisDB, err = strconv.Atoi(os.Getenv("REDIS_DATABASE"))
+	RedisPassword = os.Getenv("REDIS_PASSWORD")
 	RedisDeliveryAttempts, err = strconv.Atoi(os.Getenv("REDIS_DELIVERY_ATTEMPTS"))
 }
 
@@ -184,8 +187,8 @@ Creates a redis client for the function
 func connectToRedis() {
 	client = redis.NewClient(&redis.Options{
 		Addr:     RedisServer + ":" + RedisPort,
-		Password: "", // no password set
-		DB:       0,  // use default DB
+		Password: RedisPassword, // no password set
+		DB:       RedisDB,  // use default DB
 	})
 }
 
