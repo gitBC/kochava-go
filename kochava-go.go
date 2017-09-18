@@ -74,7 +74,7 @@ func main() {
 	QueueTime := dat["original_request_time"].(string)
 
 	//Teporary override of domain
-	QueueLocation = "http://koc.app/"
+	//QueueLocation = "http://koc.app/"
 
 	statistics = Statistics{Original_redis_key: QueueTime}
 
