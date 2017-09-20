@@ -104,10 +104,10 @@ func main() {
 
 			//Convert
 			sec, dec := math.Modf(original_request_time);
-			original_request_time_time := time.Unix(int64(sec), int64(dec*(1e9)))
+			RedisKeyAsTime := time.Unix(int64(sec), int64(dec*(1e9)))
 
 			//Subtract initial request time from now to get the total amount of time it took for us to deliver
-			statistics.Delivery_time_delta = durationToMicroString(ResponseReceivedTime.Sub(original_request_time_time))
+			statistics.Delivery_time_delta = durationToMicroString(ResponseReceivedTime.Sub(RedisKeyAsTime))
 			statistics.Delivery_datetime = timeToMicroString(DeliveryStartTime)
 
 			//subtract one time object from another, ouput difference in seconds, format to string, 6 digits
