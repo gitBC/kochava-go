@@ -106,7 +106,7 @@ func main() {
 			statistics.Response_datetime = timeToMicroString(ResponseReceivedTime)
 
 			body, err := ioutil.ReadAll(resp.Body)
-			if err == nil {}
+			if err != nil {}
 
 			statistics.Response_body = string(body)
 			statistics.Response_code = resp.StatusCode
