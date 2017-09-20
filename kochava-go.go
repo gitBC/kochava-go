@@ -145,11 +145,16 @@ func main() {
 
 }
 
-
+/**
+ * Converts a time duration to a string with microsecond percision
+ */
 func durationToMicroString(timeToConvert time.Duration) string {
 	return strconv.FormatFloat(timeToConvert.Seconds(), 'f', 6, 64)
 }
 
+/**
+ * Converts a time to a string formatted with a decimal which PHP can understand
+ */
 func timeToMicroString(timeToConvert time.Time) string {
 	return strconv.FormatInt(timeToConvert.Unix(),10) + "." + strconv.Itoa(timeToConvert.Nanosecond())
 }
