@@ -105,7 +105,10 @@ func main() {
 			statistics.Response_time_delta = durationToMicroString(ResponseReceivedTime.Sub(DeliveryStartTime))
 			statistics.Response_datetime = timeToMicroString(ResponseReceivedTime)
 
-			statistics.Response_body = string(ioutil.ReadAll(resp.Body))
+			body, err := ioutil.ReadAll(resp.Body)
+			if err == nil {}
+
+			statistics.Response_body = string(body)
 			statistics.Response_code = resp.StatusCode
 
 			postStatistics()
