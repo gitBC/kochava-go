@@ -73,9 +73,6 @@ func main() {
 	QueueLocation := dat["location"].(string)
 	QueueTime := dat["original_request_time"].(string)
 
-	//Teporary override of domain
-	//QueueLocation = "http://koc.app/"
-
 	statistics = Statistics{Original_redis_key: QueueTime}
 
 	//Store the current time so that we can count total response time.
@@ -134,20 +131,15 @@ func main() {
 			ResponseReceivedTime := time.Now()
 
 			statistics.Delivery_attempts++
-			fmt.Println(err)
 
 			if statistics.Delivery_attempts == RedisDeliveryAttempts {
 
 				//stupid magic number to get microseconds to store in php
 				statistics.Response_time_delta = durationToMicroString(ResponseReceivedTime.Sub(DeliveryStartTime))
+				statistics.Response_datetime = timeToMicroString(ResponseReceivedTime)
 
 				statistics.Delivery_datetime = timeToMicroString(DeliveryStartTime)
-				statistics.Response_datetime = timeToMicroString(ResponseReceivedTime)
 				updateStatistics()
-
-			} else {
-
-				fmt.Println("try again")
 
 			}
 
@@ -196,7 +188,6 @@ func connectToRedis() {
 	Sends updated statistics to PHP endpoint to track success / failure of delivery:wq
  */
 func updateStatistics() {
-	fmt.Println(statistics)
 
 	//Should be able to serialize these, getting empty object back
 	sendem, err := json.Marshal(statistics)
