@@ -61,27 +61,22 @@ func main() {
 	}
 
 	/*
-	 * We need to provide a variable where the JSON package can put the decoded data. This map[string]interface{} will
-	 * hold a map of strings to arbitrary data types.
+	 * We need to provide a variable where the JSON package can put the decoded data. This map[string]string will
+	 * hold a map of strings from the JSON response
 	 */
-	var dat map[string]string
-	if err := json.Unmarshal(byt, &dat); err != nil {
+	var JSONResponse map[string]string
+	if err := json.Unmarshal(byt, &JSONResponse); err != nil {
 		panic(err)
 	}
 
-	//Set a few variables we will use when delivering the Redis item
-	QueueMethod := dat["method"]
-	QueueLocation := dat["location"]
-	QueueTime := dat["original_request_time"]
-
-	statistics = Statistics{Original_redis_key: QueueTime}
+	statistics = Statistics{ Original_redis_key: JSONResponse["original_request_time"] }
 
 	//Store the current time so that we can count total response time.
 	DeliveryStartTime := time.Now()
 
 	for i := 0; i < RedisDeliveryAttempts; i++ {
 
-		req, _ := http.NewRequest(QueueMethod, QueueLocation, nil)
+		req, _ := http.NewRequest( JSONResponse["method"] , JSONResponse["location"], nil)
 		req.Header.Add("Accept", "application/json")
 		resp, err := HttpClient.Do(req)
 
@@ -92,7 +87,7 @@ func main() {
 
 			//Get redis key, convert to a float, then make a new time object which we can subtract from current time
 			//TODO: ensure times are set the same on ingestion and delivery servers
-			original_request_time, err := strconv.ParseFloat(QueueTime, 64)
+			original_request_time, err := strconv.ParseFloat( JSONResponse["original_request_time"] , 64)
 			if err != nil {}
 
 
