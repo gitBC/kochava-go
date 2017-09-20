@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"time"
 	"math"
+	"io/ioutil"
 )
 
 var RedisServer, RedisPort, RedisPassword string
@@ -87,13 +88,6 @@ func main() {
 		//Check for request error
 		if nil == err {
 
-			//Create a buffer to read the response body
-			buf := new(bytes.Buffer)
-			buf.ReadFrom(resp.Body)
-
-			//Create and print string from response body
-			RequestBody := buf.String()
-
 			ResponseReceivedTime := time.Now()
 
 			//Get redis key, convert to a float, then make a new time object which we can subtract from current time
@@ -115,7 +109,7 @@ func main() {
 			statistics.Response_datetime = timeToMicroString(ResponseReceivedTime)
 
 			statistics.Delivery_attempts++
-			statistics.Response_body = RequestBody
+			statistics.Response_body = string(ioutil.ReadAll(resp.Body))
 			statistics.Response_code = resp.StatusCode
 
 			postStatistics()
