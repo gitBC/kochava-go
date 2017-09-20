@@ -118,7 +118,7 @@ func main() {
 			statistics.Response_body = RequestBody
 			statistics.Response_code = resp.StatusCode
 
-			updateStatistics()
+			postStatistics()
 
 			//we delivered, bone out
 			break
@@ -135,7 +135,7 @@ func main() {
 				statistics.Response_datetime = timeToMicroString(ResponseReceivedTime)
 
 				statistics.Delivery_datetime = timeToMicroString(DeliveryStartTime)
-				updateStatistics()
+				postStatistics()
 
 			}
 
@@ -184,7 +184,7 @@ func connectToRedis() {
 /**
 	Sends updated statistics to PHP endpoint to track success / failure of delivery:wq
  */
-func updateStatistics() {
+func postStatistics() {
 
 	//Should be able to serialize these, getting empty object back
 	sendem, err := json.Marshal(statistics)
