@@ -80,6 +80,8 @@ func main() {
 		req.Header.Add("Accept", "application/json")
 		resp, err := HttpClient.Do(req)
 
+		statistics.Delivery_attempts++
+
 		//Check for request error
 		if nil == err {
 
@@ -103,7 +105,6 @@ func main() {
 			statistics.Response_time_delta = durationToMicroString(ResponseReceivedTime.Sub(DeliveryStartTime))
 			statistics.Response_datetime = timeToMicroString(ResponseReceivedTime)
 
-			statistics.Delivery_attempts++
 			statistics.Response_body = string(ioutil.ReadAll(resp.Body))
 			statistics.Response_code = resp.StatusCode
 
@@ -112,21 +113,19 @@ func main() {
 			//we delivered, bone out
 			break
 
-		} else {
+		}
+
+		//Post statistics if RedisDeliveryAttempts reached
+		if statistics.Delivery_attempts == RedisDeliveryAttempts {
+
 			ResponseReceivedTime := time.Now()
 
-			statistics.Delivery_attempts++
+			//stupid magic number to get microseconds to store in php
+			statistics.Response_time_delta = durationToMicroString(ResponseReceivedTime.Sub(DeliveryStartTime))
+			statistics.Response_datetime = timeToMicroString(ResponseReceivedTime)
 
-			if statistics.Delivery_attempts == RedisDeliveryAttempts {
-
-				//stupid magic number to get microseconds to store in php
-				statistics.Response_time_delta = durationToMicroString(ResponseReceivedTime.Sub(DeliveryStartTime))
-				statistics.Response_datetime = timeToMicroString(ResponseReceivedTime)
-
-				statistics.Delivery_datetime = timeToMicroString(DeliveryStartTime)
-				postStatistics()
-
-			}
+			statistics.Delivery_datetime = timeToMicroString(DeliveryStartTime)
+			postStatistics()
 
 		}
 
