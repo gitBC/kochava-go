@@ -63,15 +63,15 @@ func main() {
 	 * We need to provide a variable where the JSON package can put the decoded data. This map[string]interface{} will
 	 * hold a map of strings to arbitrary data types.
 	 */
-	var dat map[string]interface{}
+	var dat map[string]string
 	if err := json.Unmarshal(byt, &dat); err != nil {
 		panic(err)
 	}
 
 	//Set a few variables we will use when delivering the Redis item
-	QueueMethod := dat["method"].(string)
-	QueueLocation := dat["location"].(string)
-	QueueTime := dat["original_request_time"].(string)
+	QueueMethod := dat["method"]
+	QueueLocation := dat["location"]
+	QueueTime := dat["original_request_time"]
 
 	statistics = Statistics{Original_redis_key: QueueTime}
 
@@ -87,11 +87,6 @@ func main() {
 		//Check for request error
 		if nil == err {
 
-			fmt.Println(resp)
-
-			//HttpClient.Do automatically uses the provided transport to close the body on non-nil response
-			//defer resp.Body.Close()
-
 			//Create a buffer to read the response body
 			buf := new(bytes.Buffer)
 			buf.ReadFrom(resp.Body)
@@ -104,9 +99,10 @@ func main() {
 			//Get redis key, convert to a float, then make a new time object which we can subtract from current time
 			//TODO: ensure times are set the same on ingestion and delivery servers
 			original_request_time, err := strconv.ParseFloat(QueueTime, 64)
-			if err != nil {
-			}
+			if err != nil {}
 
+
+			//Convert
 			sec, dec := math.Modf(original_request_time);
 			original_request_time_time := time.Unix(int64(sec), int64(dec*(1e9)))
 
@@ -153,6 +149,7 @@ func main() {
 func durationToMicroString(timeToConvert time.Duration) string {
 	return strconv.FormatFloat(timeToConvert.Seconds(), 'f', 6, 64)
 }
+
 func timeToMicroString(timeToConvert time.Time) string {
 	return strconv.FormatInt(timeToConvert.Unix(),10) + "." + strconv.Itoa(timeToConvert.Nanosecond())
 }
